@@ -1,0 +1,77 @@
+Okay, high I'm.
+My name is much more the show that the death present to you on, I will work on detecting we conversations are between customers in the virtual all agents are this is the joint work between between IBM on such loving the high fi in in and yorktown.
+Okay, one second.
+Okay, so sorry about that.
+Okay, so I think ours this stuff with we did the phoenician, if what is egregious so egregious these some by definition, outstandingly bad or shocking.
+So as we all heard the known, the interest of using virtual agent is increasing and not specifically there are some prediction of by twenty twenty that eighty percent of the businesses will have virtual agents on.
+And even more specifically for look on the customer care.
+The main that the eighty five percent of the interactions will be on of provide all powered by virtual agents, which is, of course, good, the on for us.
+However, from either I will own experience other, we know that those will to virtual agents might behave really bad, are which can lead to loss in customer loyalty in even in some ways the use.
+Okay, sir on this is the real example of conversation with we haven't, we deal with, let me just take you through it.
+Okay, so we have the customer on the left and the agents on the right, the customer is asking for quotes to the travel and wants to the to know some details on the agent kind of understand in of telling the too you can consider by too purchased the ticket on the customer is not interested, no, I don't want to buy it.
+I of I want to know the the details, the agents actually missing gifts, and I think that the already wants to go to the next online lyor in process and to rent the cop, not the customer asking of you will of your rule person, the just response I did you develop a since assistant of trained to answer questions about drivers.
+You can get ask me any question you have the customer is trying to start getting a little bit annoyed by all these ask you who specific question in got some them on and sell, and then the agent, not picking it up at all.
+And the answering with I'm not trained on that yet I'm still learning our you may want to forget the phase of question at that time.
+The customer is thing frustrated.
+The anger.
+Well, both of them this the this is pointless can to talk to a real life person.
+And then the on both and answer with that, we don't currently have live agents, the checked with online.
+Okay, so this is those of what we define as egregious conversations.
+Okay, so of course, the bunch to well will the top elected through our book festal works the todd at to looking on the computer complementary problems and try to maximize the is the such data does some previous work on coming from the is out of mine on those systems, the data use dialogue logo in the very specific setting are on the late.
+The late, the stood those the two thousand and seventeen does somewhat the thought of trying to study what other reason for customers rephrasing and how the different reasons affect the satisfaction and dissatisfaction then finally, the also will looking on dialog break the break downs, those the walker trying to on all torrents level, try to understand where the each utterance is a break down of the data or not other, they doing the or on japanese, too chat.
+Okay, so what we are dealing with so I would like to sit down extracted from too.
+We lead a companies are the provide the them as customer support to using virtual agents, the to company the using of similar on the line, and but on those will totally too different domains.
+And the each one of the company as its own business logic, of course, arm for each of the system we extract the that thousand conversations are randomly, and you can see here the local distribution of the conversation then, and the never do see that the conversation on not from company a and this much as twice longer, then company be okay, so recall the thought to try on is to detect the those group this conversation.
+So we treat these problem as an the binary classification to problem with too target classes, egregious the awning gregis on the input to for the for the classifieds, basically the complete conversation.
+So the classification is done only at the end of the conversation with struck dot, three different feature sets for each of conversation feature or coming from the agent response from the customer input in some interaction feature between the customer on the agents.
+And we also low each feature to be a context while which basically is whether we count to where its appeal in our conversation or on.
+Okay.
+So all point few of the features are for the complete if to can just a check of the paper.
+So I'll I'll I'll, begin with some agents response.
+So on the first to the to week to ease them with, they called repeating the sponson analysis, which is basically aims to find how many time the agents keep from our rephrasing in saying be if they're the same response will similarly spahn's in order to calculate the sauna will on representing each sentence as the of the leveraging of the will and and buildings of of the sentence.
+And then we are using cause in in similarity too find similar a similar sentences on the set up feature.
+Second feature is what we call unsupported intent analysis, which basically means that on the ball, the they didn't use, not supporting these intent and usually can answer so with something like the like with so I'm, not trained on the or something similar.
+Okay, the next those that the to feature the the coming from the customers site in here on point of of done.
+So from the customer we may want to could on some behavioral cues on the first family's from the emotion analysis in as you saw in the example earlier in the real example, and as was discussed, and actually in the morning in the all emotion is really important in the seems to be one of the causes that lead to can lead to egregious conversation.
+So we were looking of different behavior of the emotion were looking on big online, the emotions, the for example, this is the max negative emotions, but will also looking on variation of too all the conversation, so we will doing some ever doing going on now the emotions what the conversation and compared it to some pick on in specific utterance, are we done our looking on some rephrasing analysis, so this is it equivalent to what they say before.
+So here we trying to capture to how many times what of the efforts that the customer is trying to rephrase on again and again, until the agents, well, hopefully understand or not also another feature is the asking for human agents, but here I want to make clear the it's, the perfectly okay to ask for you an agent, however, in some cases, it's not and one of the cases here is for example, when the customizable for human when they did, but we also the is carreon negative emotions, and this should be taken care.
+Okay, finally were looking on some interaction between the agent in the customer on the agent.
+So the first group of feature, the looking on some behavior or some inputs from the customer that on all of these phones, the something like I'm not trained on that.
+And here give you an example, civil the third one, what the call long sentences.
+So you can maybe imagine yourself starting to on write down some very long sentence, explaining some question the to have or something that you need enough that use spend quite a lot of time in a fourth in the efforts to press enter and immediately to got I'm, not turn on that this could of closely too high frustration of the customer and later on for an group, just cause the section, our we looking on, also the customer aside on some freezing analysis.
+The of for example, getting results of similar results by the agents with which that basically means that the customer is trying to phrase.
+The room is the the input, but the agent keep for getting the wrong thing, and keep of with the turn out wrong on are not to what the customer expected to I not the conversation lens is both of the feature.
+Okay, so for the setting we sample full eleven hundred conversation for company a in another two hundred from our company be an it's conversation are we give it, we give you too for on HCI experts judge too using this to our guideline conversation with all exploded mute extra ordinarily bad in some ways those conversations where you like to see a human jump in and save the conversation.
+Okay, like a superman or something like that are the they delay delay, delay ability between the judges was high around on point of two.
+Okay, so for that run through the actually non for both companies around eight percent of the conversation with doug as egregious I'm.
+So this is our the the the the the tools, the we looking on.
+We also implemented of focus.
+Some are based on whether the compel with such due on the first model is a text based model.
+So we looked on a unique on by grimes on some feature, an of the lexicon for each of those of coming for those other emotion, emotional features and the other few on the for door based on looking very simple with the on the agent to response with the I'm, not trained on that, or on the customer is asking for you an agent.
+Finally, we implemented our class for using the s v s SVM with the the now can okay, so some results some okay, so we we look on on the f one school.
+We see the some now the egregious classifiers outperforming, both on bass baseline approach in around forty percent in eighty percent from the text based on.
+I think what is also interesting that here was up to the to look on the precision because here it seems that the at least the text based approaches can capture will send some of the egregious this using text while features, which is interesting our we then continue with the feature sets contribution analyses, which is basically heading incremental each time one of the different sets of the feature.
+So we starting with the agents features only then we are adding customer on finally also of of to get up, and as you can see on the gray column, adding also of the goodwill of gave us the highest quality.
+What is also interesting here is that the same that the features that are coming from the customer along.
+They are the more informative with respect to our detecting egregious this.
+Okay, our with the look on was the main.
+So remember we all we had these company be on conversations.
+So what we did we trying the data only using company a on data, and then we didn't do on any of the musician note tuning on for that those not and we destroyed those this very simple on on simply on company be did data.
+So if we look not on the of when score also as somehow expected the those was some degradation, the on nine percent, but still seems the from these, it was able to detect I'd, we this on what is also nice to seize the annoyance nice, but if you look now both on the performance of the text based now is much lower in this are used that to the fact that text feature allows the tied to the main the to the were trained on okay.
+So finally, we did some mom customer, the phrasing analysis, so inspired by the too works by saikai un, these sunal, we wanted so that idea was to understand the difference reasons of our customer, the phrasing in the the setting the use the heard the all systems, so they have a little bit differently stuff problems, but those problems of related to what was setting, and the idea was to turn and analyze the whole.
+The do distribution is different between the egregious just to the on angry just class.
+So the first time I always l coming from, which is called in all basically the intent to was not detected correctly.
+And this means the the and agents response is very semantically file for what the customer is was expected too.
+Then the all on able what is coming from on is limitation from the language generation limitation, it's at him on item is the the intent section was score, but the customer was not satisfied by the.
+And so the two got for the agents, an an example for the that could be that the agents are going to speak very specific thing and got us may be a broad on as of that was not use he's on needs in the last elway's they'll come from dunn in support the intent, which is basically I'm, not not trained on data of these.
+This is not the supported by the agent.
+And now if you look on the distribution between the good just as the not gorgeous so on, we see that dumb much more unsupported intent will in the previous one error, and also of it.
+LG reduction of are heiau in the non gregis one, and I think both of them to get the on indicates that customer of tolerance too blow blames when when they get some feedback from the agent, the time he actually understand or the case on the system, some of the things that are they ask, and thus a the and conversation is not getting egregious that fast also if you look on the arm and then you also on the the same percentage in this is, of course, due to the weight, the it's, the same on the line, it's the same at an annual company.
+Okay, so to conclude so in this will walker are we show how we can detect egregious conversation using the feature of coming from the agent customer and on the direction on also so that the the feature on whole bust and can will can first the main in for future work consul first, we want to do it in every time.
+So we don't want to now we are waiting to the end of the call conversation, and we plan to do it in real time.
+We want to collect more data, so we can look on other on you are approaches, and in order to be useful, we also on to I integrates in some real alice's tools and explained the root cause for those egregious just conversations high thanks for the great holiday, and on the on as the foundation of our as the you lose track these so many feature from the dollar contacts.
+So I'm wondering which type of feature is most important lie compositional lands or big because in some data tenet is in repeating in repented of that state repeating imports may help to complete the task.
+So so I'm wondering which tapley feature is most important, I expected you'd be the last, but a I couldn't hear the last part of can you repeat the last also you recall you used, you have three three feature sets right, are the first ones extracted from the agent in put the segments from the customer in this decline from into action.
+So in each features as you have so many features right so I'm, wondering which type of features are the most important one.
+Okay, so actually it's not appear in the system, but we did the analysis for to get the featuring both those within the group itself with it's, not part of the work.
+So we can discuss the the line, but the they here.

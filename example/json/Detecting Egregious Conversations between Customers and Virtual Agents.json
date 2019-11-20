@@ -1,0 +1,437 @@
+{
+  "source" : "META",
+  "title" : "Detecting Egregious Conversations between Customers and Virtual Agents",
+  "authors" : [ "Tommy Sandbank", "Michal Shmueli-Scheuer", "Jonathan Herzig", "David Konopnicki", "John Richards", "David Piorkowski" ],
+  "emails" : [ "tommy@il.ibm.com", "shmueli@il.ibm.com", "hjon@il.ibm.com", "davidko@il.ibm.com", "ajtr@us.ibm.com,", "david.piorkowski@ibm.com" ],
+  "sections" : [ {
+    "heading" : null,
+    "text" : "Proceedings of NAACL-HLT 2018, pages 1802–1811 New Orleans, Louisiana, June 1 - 6, 2018. c©2018 Association for Computational Linguistics"
+  }, {
+    "heading" : "1 Introduction",
+    "text" : "Automated conversational agents (chatbots) are becoming widely used for various tasks such as personal assistants or as customer service agents. Recent studies project that 80% of businesses plan to use chatbots by 20201, and that chatbots will power 85% of customer service interactions by the year 20202. This increasing usage is mainly due to advances in artificial intelligence and natural language processing (Hirschberg and Manning, 2015)\n1http://read.bi/2gU0szG 2http://gtnr.it/2z428RS\nalong with increasingly capable chat development environments, leading to improvements in conversational richness and robustness.\nStill, chatbots may behave extremely badly, leading to conversations so off-the-mark that only a human agent could step in and salvage them. Consequences of these failures may include loss of customer goodwill and associated revenue, and even exposure to litigation if the failures can be shown to include fraudulent claims. Due to the increasing prevalence of chatbots, even a small fraction of such egregious3 conversations could be problematic for the companies deploying chatbots and the providers of chatbot services.\nIn this paper we study detecting these egregious conversations that can arise in numerous ways. For example, incomplete or internally inconsistent training data can lead to false classification of user intent. Bugs in dialog descriptions can lead to dead ends. Failure to maintain adequate context can cause chatbots to miss anaphoric references. In the extreme case, malicious actors may provide heavily biased (e.g., the Tay chatbot4) or even hacked misbehaviors.\nIn this article, we focus on customer care systems. In such setting, a conversation usually becomes egregious due to a combination of the aforementioned problems. The resulting customer frustration may not surface in easily detectable ways such as the appearance of all caps, shouting to a speech recognizer, or the use of profanity or extreme punctuation. Consequently, the chatbot will continue as if the conversation is proceeding well, usually\n3Defined by the dictionary as outstandingly bad. 4http://bit.ly/2fwYaa5\n1802\nleading to conversational breakdown. Consider, for example, the anonymized but representative conversation depicted in Figure 1. Here the customer aims to understand the details of a flight ticket. In the first two turns, the chatbot misses the customer’s intentions, which leads to the customer asking “Are you a real person?”. The customer then tries to explain what went wrong, but the chatbot has insufficient exposure to this sort of utterance to provide anything but the default response (“I’m not trained on that”). The response seems to upset the customer and leads to a request for a human agent, which is rejected by the system (“We don’t currently have live agents”). Such rejection along with the previous responses could lead to customer frustration (Amsel, 1992).\nBeing able to automatically detect such conversations, either in real time or through log analysis, could help to improve chatbot quality. If detected in real time, a human agent can be pulled in to salvage the conversation. As an aid to chatbot improvement, analysis of egregious conversations can often point to problems in training data or system logic that can be repaired. While it is possible to scan system logs by eye, the sheer volume of conversations may overwhelm the analyst or lead to random sampling that misses important failures. If, though, we can automatically detect the worst conversations (in our experience, typically under 10% of the total),\nthe focus can be on fixing the worst problems. Our goal in this paper is to study conversational features that lead to egregious conversations. Specifically, we consider customer inputs throughout a whole conversation, and detect cues such as rephrasing, the presence of heightened emotions, and queries about whether the chatbot is a human or requests to speak to an actual human. In addition, we analyze the chatbot responses, looking for repetitions (e.g. from loops that might be due to flow problems), and the presence of ”not trained” responses. Finally, we analyze the larger conversational context exploring, for example, where the presence of a ”not trained” response might be especially problematic (e.g., in the presence of strong customer emotion).\nThe main contributions of this paper are twofold: (1) This is the first research focusing on detecting egregious conversations in conversational agent (chatbot) setting and (2) this is the first research using unique agent, customer, and customer-agent interaction features to detect egregiousness.\nThe rest of this paper is organized as follows. We review related work, then we formally define the methodology for detecting egregious conversations. We describe our data, experimental setting, and results. We then conclude and suggest future directions."
+  }, {
+    "heading" : "2 Related Work",
+    "text" : "Detecting egregious conversations is a new task, however, there is related work that aim at measuring the general quality of the interactions in conversational systems. These works studied the complementary problem of detecting and measuring user satisfaction and engagement. Early work by (Walker et al., 1997, 2001) discussed a framework that maximizes the user satisfaction by considering measures such as number of inappropriate utterances, recognition rates, number of times user requests repetitions, number of turns per interaction, etc. Shortcomings of this approach are discussed by (Hajdinjak and Mihelic, 2006). Other works focus on predicting the user engagement in such systems. Examples include (Kiseleva et al., 2016b,a; Jiang et al., 2015). Specifically, these\nworks evaluated chat functionality by asking users to make conversations with an intelligent agent and measured the user satisfaction along with other features such as the automatic speech recognition (ASR) quality and intent classification quality. In (Sandbank et al., 2017) the authors presented a conversational system enhanced with emotion analysis, and suggested using emotions as triggers for human escalation. In our work, we likewise use emotion analysis as predictive features for egregious conversation. The works of (Sarikaya, 2017; Sano et al., 2017) studied reasons why users reformulated utterances in such systems. Specifically, in (Sarikaya, 2017) they reported on how the different reasons affect the users’ satisfaction. In (Sano et al., 2017) they focused on how to automatically predict the reason for user’s dissatisfaction using different features. Our work also explores user reformulation (or rephrasing) as one of the features to predict egregious conversations. We build on the previous work by leveraging some of the approaches in our classifier for egregious conversations. In (Walker et al., 2000; Hastie et al., 2002) the authors also looked for problems in a specific setting of spoken conversations. The main difference with our work is that we focus on chat logs for domains for which the expected user utterances are a bit more diverse, using interaction features as well as features that are not sensitive to any architectural aspects of the conversational system (e.g., ASR component). Several other approaches for evaluating chatbot conversations indirectly capture the notion of conversational quality. For example, several prior works borrowed from the field of pragmatics in various metrics around the principles of cooperative conversation (Chakrabarti and Luger, 2013; Saygin A. P., 2002). In (Steidl et al., 2004) they measured dialogue success at the turn level as a way of predicting the success of a conversation as a whole. (Webb et al., 2010) created a measure of dialogue appropriateness to determine its role in maintaining a conversation. Recently, (Liu et al., 2016) evaluated a number of popular measures for dialogue response generation systems and highlighted specific weaknesses in the measures. Simi-\nlarly, in (Sebastian et al., 2009) they developed a taxonomy of available measures for an enduser’s quality of experience for multimodel dialogue systems, some of which touch on conversational quality. All these measures may serve as reasons for a conversation turning egregious, but none try to capture or predict it directly.\nIn the domain of customer service, researchers mainly studied reasons for failure of such systems along with suggestions for improved design (Mimoun et al., 2012; Gnewuch et al., 2017). In (Mimoun et al., 2012) the authors analyzed reasons sales chatbots fail by interviewing chatbots experts. They found that a combination of exaggerated customer expectations along with a reduction in agent performance (e.g., failure to listen to the consumer, being too intrusive) caused customers to stop using such systems. Based on this qualitative study, they proposed an improved model for sales chatbots. In (Gnewuch et al., 2017) they studied service quality dimensions (i.e., reliability, empathy, responsiveness, and tangibility) and how to apply them during agent design. The main difference between those works and ours is that they focus on qualitative high-level analysis while we focus on automatic detection based on the conversations logs."
+  }, {
+    "heading" : "3 Methodology",
+    "text" : "The objective of this work is to reliably detect egregious conversations between a human and a virtual agent. We treat this as a binary classification task, where the target classes are “egregious” and “non-egregious”. While we are currently applying this to complete conversations (i.e., the classification is done on the whole conversation), some of the features examined here could likely be used to detect egregious conversations as they were unfolding in real time. To perform egregious conversation detection, features from both customer inputs and agent responses are extracted, together with features related to the combination of specific inputs and responses. In addition, some of these features are contextual, meaning that they are dependent on where in the conversation they appear.\nUsing this set of features for detecting egre-\ngious conversations is novel, and as our experimental results show, improves performance compared to a model based solely on features extracted from the conversation’s text. We now describe the agent, customer, and combined customer-agent features."
+  }, {
+    "heading" : "3.1 Agent Response Features",
+    "text" : "A virtual agent is generally expected to closely simulate interactions with a human operator (Reeves and Nass, 1996; Nass and Moon,Y, 2000; Krämer, 2008). When the agent starts losing the context of a conversation, fails in understanding the customer intention, or keeps repeating the same responses, the illusion of conversing with a human is lost and the conversation may become extremely annoying. With this in mind, we now describe the analysis of the agent’s responses and associated features (summarized in the top part of Table 1)."
+  }, {
+    "heading" : "3.1.1 Repeating Response Analysis",
+    "text" : "As typically implemented, the virtual agent’s task is to reliably detect the intent of each customer’s utterance and respond meaningfully. Accurate intent detection is thus a fundamental characteristic of well-trained virtual agents, and incorrect intent analysis is reported as the leading cause of user dissatisfaction (Sarikaya, 2017). Moreover, since a classifier (e.g., SVM, neural network, etc.) is often used to detect intents, its probabilistic behavior can cause the agent to repeat the same (or semantically similar) response over and over again, despite the user’s attempt to rephrase the same intent.\nSuch agent repetitions lead to an unnatural interaction (Klüwer, 2011). To identify the agent’s repeating responses, we measured similarity between agent’s subsequent (not necessarily sequential) turns. We represented each sentence by averaging the pre-trained embeddings5 of each word in the sentence, calculating the cosine similarity between the representations. Turns with a high similarity value6 are considered as repeating responses.\n5https://code.google.com/archive/p/word2vec 6Empirically, similarity values ≥ 0.8"
+  }, {
+    "heading" : "3.1.2 Unsupported Intent Analysis",
+    "text" : "Given that the knowledge of a virtual agent is necessarily limited, we can expect that training would not cover all customer intents. If the classifier technology provides an estimate of classification confidence, the agent can respond with some variant of “I’m not trained on that” when confidence is low. In some cases, customers will accept that not all requests are supported. In other cases, unsupported intents can lead to customer dissatisfaction (Sarikaya, 2017), and cascade to an egregious conversation (as discussed below in Section 3.3). We extracted the possible variants of the unsupported intent messages directly from the system, and later matched them with the agent responses from the logs."
+  }, {
+    "heading" : "3.2 Customer Inputs Features",
+    "text" : "From the customer’s point of view, an ineffective interaction with a virtual agent is clearly undesirable. An ineffective interaction requires the expenditure of relatively large effort from the customer with little return on the investment (Zeithaml et al., 1990; Mimoun et al., 2012). These efforts can appear as behavioral cues in the customer’s inputs, and include emotions, repetitions, and more. We used the following customer analysis in our model. Customer features are summarized in the middle part of Table 1."
+  }, {
+    "heading" : "3.2.1 Rephrasing Analysis",
+    "text" : "When a customer repeats or rephrases an utterance, it usually indicates a problem with the agent’s understanding of the customer’s intent. This can be caused by different reasons as described in (Sano et al., 2017). To measure the similarity between subsequent customer turns to detect repetition or rephrasing, we used the same approach as described in Section 3.1.1. Turns with a high similarity value6 are considered as rephrases."
+  }, {
+    "heading" : "3.2.2 Emotional Analysis",
+    "text" : "The customer’s emotional state during the conversation is known to correlate with the conversation’s quality (Oliver, 2014). In order to analyze the emotions that customers exhibit in each turn, we utilized the IBM Tone Analyzer service, available publicly online7.\n7https://ibm.co/2hnYkCv\nThis service was trained using customer care interactions, and infers emotions such as frustration, sadness, happiness. We focused on negative emotions (denoted as NEG EMO) to identify turns with a negative emotional peak (i.e., single utterances that carried high negative emotional state), as well as to estimate the aggregated negative emotion throughout the conversation (i.e., the averaged negative emotion intensity). In order to get a more robust representation of the customer’s negative emotional state, we summed the score of the negative emotions (such as frustration, sadness, anger, etc.) into a single negative sentiment score (denoted as NEG SENT). Note that we used the positive emotions as a filter for other customer features, such as the rephrasing analysis. Usually, high positive emotions capture different styles of “thanking the agent”, or indicate that the customer is somewhat satisfied (Rychalski and Hudson, 2017), thus, the conversation is less likely to become egregious."
+  }, {
+    "heading" : "3.2.3 Asking for a Human Agent",
+    "text" : "In examining the conversation logs, we noticed that it is not unusual to find a customer asking to be transferred to a human agent. Such a request might indicate that the virtual agent is not providing a satisfactory service. Moreover, even if there are human agents, they might not be available at all times, and thus, a rejection of such a request is sometimes reasonable, but might still lead to customer frustration (Amsel, 1992)."
+  }, {
+    "heading" : "3.2.4 Unigram Input",
+    "text" : "In addition to the above analyses, we also detected customer turns that contain exactly one word. The assumption is that single word (unigram) sentences are probably short customer responses (e.g., no, yes, thanks, okay), which in most cases do not contribute to the egregiousness of the conversation. Hence, calculating the percentage of those turns out of the whole conversation gives us another measurable feature."
+  }, {
+    "heading" : "3.3 Customer-Agent Interaction Features",
+    "text" : "We also looked at features across conversation utterance-response pairs in order to capture a more complete picture of the interac-\ntion between the customer and the virtual agent. Here, we considered a pair to be customer utterance followed by an agent response. For example, a pair may contain a turn in which the customer expressed negative emotions and received a response of “not trained” by the agent. In this case, we would leverage the two analyses: emotional and unsupported intent. Figure 1 gives an example of this in the customer’s penultimate turn. Such interactions may divert the conversation towards becoming egregious. These features are summarized in the last part of Table 1."
+  }, {
+    "heading" : "3.3.1 Similarity Analysis",
+    "text" : "We also calculated the similarity between the customer’s turn and the virtual agent’s response in cases of customer rephrasing. This analysis aims to capture the reason for the customer rephrasing. When a similarity score between the customer’s turn and the agent’s response is low, this may indicate a misclassified intent, as the agent’s responses are likely to share some textual similarity to the customer’s utterance. Thus, a low score may indicate a poor interaction, which might lead the conversation to become egregious. Another similarity feature is between two customer’s subsequent turns when the agent’s response was “not trained”."
+  }, {
+    "heading" : "3.4 Conversation Egregiousness Prediction Classifier",
+    "text" : "We trained a binary SVM classifier with a linear kernel. A feature vector for a sample in the training data is generated using the scores calculated for the described features, where each feature value is a number between [0,1]. After the model was trained, test conversations are classified by the model, after being transformed to a feature vector in the same way a training sample is transformed. The SVM classification model (denoted EGR) outputs a label “egregious” or “non-egregious” as a prediction for the conversation."
+  }, {
+    "heading" : "4 Experiments",
+    "text" : ""
+  }, {
+    "heading" : "4.1 Dataset",
+    "text" : "We extracted data from two commercial systems that provide customer support via conversational bots (hereafter denoted as company A and company B). Both agents are using similar underlying conversation engines, each embedded in a larger system with its own unique business logic. Company A’s system deals with sales support during an online purchase, while company B’s system deals with technical support for purchased software products. Each system logs conversations, and each conversation is a sequence of tuples, where each tuple consists of {conversation id, turn id, customer input, agent response}. From each system, we randomly extracted 10000 conversations. We further removed conversations that contained fewer than 2 turns, as these are too short to be meaningful since the customer never replied or provided more details about the issue at hand. Figure 2 depicts the frequencies of conversation lengths which follow a power-law relationship. The conversations from company A’s system tend to be longer, with an average of 8.4 turns vs. an average of 4.4 turns for company B."
+  }, {
+    "heading" : "4.2 Experimental Setup",
+    "text" : "The first step in building a classification model is to obtain ground truth data. For this purpose, we randomly sampled conversations from our datasets. This sample included 1100 and 200 conversations for company A and company B respectively. The\nsampled conversations were tagged using an in-house tagging system designed to increase the consistency of human judgements. Each conversation was tagged by four different expert judges8. Given the full conversation, each judge tagged whether the conversation was egregious or not following this guideline: “Conversations which are extraordinarily bad in some way, those conversations where you’d like to see a human jump in and save the conversation”.\nWe generated true binary labels by considering a conversation to be egregious if at least three of the four judges agreed. The interrater reliability between all judges, measured by Cohen’s Kappa, was 0.72 which indicates high level agreement. This process generated the egregious class sizes of 95 (8.6%) and 16 (8%) for company A and company B, respectively. This verifies the unbalanced data expectation as previously discussed.\nWe also implemented two baseline models, rule-based and text-based, as follows:\nRule-based. In this approach, we look for cases in which the virtual agent responded with a “not trained” reply, or occurrences of the customer requesting to talk to a human agent. As discussed earlier, these may be indicative of the customer’s dissatisfaction with the nature of the virtual agent’s responses.\nText-based. A model that was trained to predict egregiousness given the conversation’s text (all customer and agent’s text dur-\n8judges that are HCI experts and have experience in designing conversational agents systems.\ning the conversation). This model was implemented using state-of-the-art textual features as in (Herzig et al., 2017). In (Herzig et al., 2017) emotions are detected from text, which can be thought of as similar to our task of predicting egregious conversations.\nWe evaluated these baseline methods against our classifier using 10-fold crossvalidation over company A’s dataset (we did not use company B’s data for training due to the low number of tagged conversations). Since class distribution is unbalanced, we evaluated classification performance by using precision (P), recall (R) and F1-score (F) for each class. The EGR classifier was implemented using an SVM with a linear kernel9."
+  }, {
+    "heading" : "4.3 Classification Results",
+    "text" : "Table 2 depicts the classification results for both classes and the three models we explored. The EGR model significantly outperformed both baselines10. Specifically, for the egregious class, the precision obtained by the text-based and EGR models were similar. This indicates that the text analyzed by both models encodes some information about egregiousness. On the other hand, for the recall and hence the F1-score, the EGR model relatively improved the text-based model by 41% and 18%, respectively. We will further analyze the models below."
+  }, {
+    "heading" : "4.4 Feature Set Contribution Analysis",
+    "text" : "To better understand the contributions of different sets of features to our EGR model, we examined various features in an incremental fashion. Based on the groups of feature sets that we defined in Section 3, we tested the performance of different group combinations, added in the following order: agent, customer and customer-agent interactions.\n9http://scikit-learn.org/stable/modules/svm.html 10EGR with p < 0.001, using McNemar’s test.\nFigure 3 depicts the results for the classification task. The x-axis represents specific combinations of groups, and the y-axis represents the performance obtained. Figure 3 shows that adding each group improved performance, which indicates the informative value of each group. The figure also suggests that the most informative group in terms of prediction ability is the customer group."
+  }, {
+    "heading" : "4.5 Cross-Domain Analysis",
+    "text" : "We also studied how robust our features were: If our features generalize well, performance should not drop much when testing company B with the classifier trained exclusively on the data from company A. Although company A and company B share similar conversation engine platforms, they are completely different in terms of objectives, domain, terminology, etc. For this task, we utilized the 200 annotated conversations of company B as test data, and experimented with the different models, trained on company A’s data. The rule-based baseline does not require training, of course, and could be applied directly.\nTable 3 summarizes the results showing that the performance of the EGR model is relatively stable (w.r.t the model’s performance when it was trained and tested on the same domain), with a degradation of only 9% in F1-score11. In addition, the results also show that the text-based model performs poorly when applied to a different domain (F1-score of 0.11). This may occur since textual features are closely tied to the training domain.\n11EGR model results are statistically significant compared to the baselines models with p < 0.001, using McNemar’s test."
+  }, {
+    "heading" : "4.6 Models Analysis",
+    "text" : ""
+  }, {
+    "heading" : "4.6.1 Customer Rephrasing Analysis",
+    "text" : "Inspired by (Sarikaya, 2017; Sano et al., 2017) we analyzed the customer rephrasing motivations for both the egregious and the non-egregious classes. First, we detected customer rephrasing as described in Section 3.2.1, and then assigned to each its motivation. Specifically, in our setting, the relevant motivations are12: (1) Natural language understanding (NLU) error - the agent’s intent detection is wrong, and thus the agent’s response is semantically far from the customer’s turn; (2) Language generation (LG) limitation - the intent is detected correctly, but the customer is not satisfied by the response (for example, the response was too generic); (3) Unsupported intent error - the customer’s intent is not supported by the agent.\nIn order to detect NLU errors, we measured the similarity between the first customer turn (before the rephrasing) and the agent response. We followed the methodology presented in (Jovita et al., 2015) claiming that the best answer given by the system has the highest similarity value between the customer turn and the agent answer. Thus, if the similarity was < 0.8 we considered this as an erroneous detection. If the similarity was ≥ 0.8 we considered the detection as correct, and thus the rephrasing occurred due to LG limitation. To detect unsupported intent error we used the approach described in Section 3.1.2. As reported in table 4, rephrasing due to an unsupported intent is more common in egregious conversations (18% vs. 14%), whereas, rephrasing due to generation limitations (LG limitation) is more common in\n12We did not consider other motivations like automatic speech recognition (ASR) errors, fallback to search, and backend failure as they are not relevant to our setting.\nnon-egregious conversations (37% vs. 33%). This indicates that customers are more tolerant of cases where the system understood their intent, but the response is not exactly what they expected, rather than cases where the system’s response was “not trained”. Finally, the percentage of rephrasing due to wrong intent detection (NLU errors) is similar for both classes, which is somewhat expected as similar underlying systems provided NLU support."
+  }, {
+    "heading" : "4.6.2 Recall Analysis",
+    "text" : "We further investigated why the EGR model was better at identifying egregious conversations (i.e., its recall was higher compared to the baseline models). We manually examined 26 egregious conversations that were identified justly so by the EGR model, but misclassified by the other models. Those conversations were particularly prevalent with the agent’s difficulty to identify correctly the user’s intent due to NLU errors or LG limitation. We did not encounter any unsupported intent errors leading to customer rephrasing, which affected the ability of the rule-based model to classify those conversations as egregious. In addition, the customer intents that appeared in those conversations were very diverse. While customer rephrasing was captured by the EGR model, for the text-based model some of the intents were new (did not appear in the training data) and thus were difficult for the model to capture."
+  }, {
+    "heading" : "5 Conclusions and Future Work",
+    "text" : "In this paper, we have shown how it is possible to detect egregious conversations using a combination of customer utterances, agent responses, and customer-agent interactional features. As explained, the goal of this work is to give developers of automated agents tools to detect and then solve problems cre-\nated by exceptionally bad conversations. In this context, future work includes collecting more data and using neural approaches (e.g., RNN, CNN) for analysis, validating our models on a range of domains beyond the two explored here. We also plan to extend the work to detect egregious conversations in real time (e.g., for escalating to a human operators), and create log analysis tools to analyze the root causes of egregious conversations and suggest possible remedies."
+  } ],
+  "references" : [ {
+    "title" : "Frustration Theory: An Analysis of Dispositional Learning and Memory",
+    "author" : [ "Abram Amsel." ],
+    "venue" : "Problems in the Behavioural Sciences. Cambridge University Press. https://doi.org/10.1017/CBO9780511665561.",
+    "citeRegEx" : "Amsel.,? 1992",
+    "shortCiteRegEx" : "Amsel.",
+    "year" : 1992
+  }, {
+    "title" : "A framework for simulating and evaluating artificial chatter bot conversations",
+    "author" : [ "Chayan Chakrabarti", "George F. Luger." ],
+    "venue" : "FLAIRS Conference.",
+    "citeRegEx" : "Chakrabarti and Luger.,? 2013",
+    "shortCiteRegEx" : "Chakrabarti and Luger.",
+    "year" : 2013
+  }, {
+    "title" : "Towards designing cooperative and social conversational agents for customer service",
+    "author" : [ "Ulrich Gnewuch", "Stefan Morana", "Alexander Maedche." ],
+    "venue" : "Proceedings of the International Conference on Information Systems (ICIS).",
+    "citeRegEx" : "Gnewuch et al\\.,? 2017",
+    "shortCiteRegEx" : "Gnewuch et al\\.",
+    "year" : 2017
+  }, {
+    "title" : "The paradise evaluation framework: Issues and findings",
+    "author" : [ "Melita Hajdinjak", "France Mihelic." ],
+    "venue" : "Comput. Linguist. 32(2).",
+    "citeRegEx" : "Hajdinjak and Mihelic.,? 2006",
+    "shortCiteRegEx" : "Hajdinjak and Mihelic.",
+    "year" : 2006
+  }, {
+    "title" : "What’s the problem: Automatically identifying problematic dialogues in DARPA communicator dialogue systems",
+    "author" : [ "Helen Wright Hastie", "Rashmi Prasad", "Marilyn A. Walker." ],
+    "venue" : "Proceedings of the 40th Annual Meeting of the As-",
+    "citeRegEx" : "Hastie et al\\.,? 2002",
+    "shortCiteRegEx" : "Hastie et al\\.",
+    "year" : 2002
+  }, {
+    "title" : "Emotion detection from text via ensemble classification using word embeddings",
+    "author" : [ "Jonathan Herzig", "Michal Shmueli-Scheuer", "David Konopnicki." ],
+    "venue" : "Proceedings of the ACM SIGIR International Conference on",
+    "citeRegEx" : "Herzig et al\\.,? 2017",
+    "shortCiteRegEx" : "Herzig et al\\.",
+    "year" : 2017
+  }, {
+    "title" : "Advances in natural language processing",
+    "author" : [ "Julia Hirschberg", "Christopher D. Manning." ],
+    "venue" : "Science 349(6245):261–266.",
+    "citeRegEx" : "Hirschberg and Manning.,? 2015",
+    "shortCiteRegEx" : "Hirschberg and Manning.",
+    "year" : 2015
+  }, {
+    "title" : "Automatic online evaluation of intelligent assistants",
+    "author" : [ "Jiepu Jiang", "Ahmed Hassan Awadallah", "Rosie Jones", "Umut Ozertem", "Imed Zitouni", "Ranjitha Gurunath Kulkarni", "Omar Zia Khan." ],
+    "venue" : "Proceedings of the 24th Inter-",
+    "citeRegEx" : "Jiang et al\\.,? 2015",
+    "shortCiteRegEx" : "Jiang et al\\.",
+    "year" : 2015
+  }, {
+    "title" : "Using vector space model in question answering system",
+    "author" : [ "Jovita", "Linda", "Andrei Hartawan", "Derwin Suhartono." ],
+    "venue" : "Procedia Computer Science 59:305 – 311. International Conference on Computer Science and Computational Intel-",
+    "citeRegEx" : "Jovita et al\\.,? 2015",
+    "shortCiteRegEx" : "Jovita et al\\.",
+    "year" : 2015
+  }, {
+    "title" : "Predicting user satisfaction with intelligent assistants",
+    "author" : [ "Julia Kiseleva", "Kyle Williams", "Ahmed Hassan Awadallah", "Aidan C. Crook", "Imed Zitouni", "Tasos Anastasakos." ],
+    "venue" : "Proceedings of the 39th International ACM SIGIR Con-",
+    "citeRegEx" : "Kiseleva et al\\.,? 2016a",
+    "shortCiteRegEx" : "Kiseleva et al\\.",
+    "year" : 2016
+  }, {
+    "title" : "Understanding user satisfaction with intelligent assistants",
+    "author" : [ "Julia Kiseleva", "Kyle Williams", "Jiepu Jiang", "Ahmed Hassan Awadallah", "Aidan C. Crook", "Imed Zitouni", "Tasos Anastasakos." ],
+    "venue" : "Proceedings of the 2016 ACM on Con-",
+    "citeRegEx" : "Kiseleva et al\\.,? 2016b",
+    "shortCiteRegEx" : "Kiseleva et al\\.",
+    "year" : 2016
+  }, {
+    "title" : "I Like Your Shirt” - Dialogue Acts for Enabling Social Talk in Conversational Agents, pages 14–27",
+    "author" : [ "Tina Klüwer" ],
+    "venue" : null,
+    "citeRegEx" : "Klüwer.,? \\Q2011\\E",
+    "shortCiteRegEx" : "Klüwer.",
+    "year" : 2011
+  }, {
+    "title" : "Social effects of virtual assistants",
+    "author" : [ "Nicole C. Krämer." ],
+    "venue" : "a review of empirical results with regard to communication. In Proceedings of the 8th International Conference on Intelligent Virtual Agents. IVA ’08.",
+    "citeRegEx" : "Krämer.,? 2008",
+    "shortCiteRegEx" : "Krämer.",
+    "year" : 2008
+  }, {
+    "title" : "How NOT to evaluate your dialogue system: An empirical study of unsupervised evaluation metrics for dialogue",
+    "author" : [ "Chia-Wei Liu", "Ryan Lowe", "Iulian Serban", "Michael Noseworthy", "Laurent Charlin", "Joelle Pineau" ],
+    "venue" : null,
+    "citeRegEx" : "Liu et al\\.,? \\Q2016\\E",
+    "shortCiteRegEx" : "Liu et al\\.",
+    "year" : 2016
+  }, {
+    "title" : "Case study embodied virtual agents: An analysis on reasons for failure",
+    "author" : [ "Mohammed Slim Ben Mimoun", "Ingrid Poncin", "Marion Garnier." ],
+    "venue" : "Journal of Retailing and Consumer Services 19(6):605 – 612.",
+    "citeRegEx" : "Mimoun et al\\.,? 2012",
+    "shortCiteRegEx" : "Mimoun et al\\.",
+    "year" : 2012
+  }, {
+    "title" : "Machines and mindlessness: Social responses to computers",
+    "author" : [ "C. Nass", "Y. Moon" ],
+    "venue" : "Journal of Social Issues",
+    "citeRegEx" : "Nass and Moon,? \\Q2000\\E",
+    "shortCiteRegEx" : "Nass and Moon",
+    "year" : 2000
+  }, {
+    "title" : "Satisfaction: A behavioral perspective on the consumer",
+    "author" : [ "Richard L Oliver." ],
+    "venue" : "Routledge.",
+    "citeRegEx" : "Oliver.,? 2014",
+    "shortCiteRegEx" : "Oliver.",
+    "year" : 2014
+  }, {
+    "title" : "The Media Equation: How People Treat Computers, Television, and New Media Like Real People and Places",
+    "author" : [ "Byron Reeves", "Clifford Nass." ],
+    "venue" : "Cambridge University Press, New York, NY, USA.",
+    "citeRegEx" : "Reeves and Nass.,? 1996",
+    "shortCiteRegEx" : "Reeves and Nass.",
+    "year" : 1996
+  }, {
+    "title" : "Asymmetric effects of customer emotions on satisfaction and loyalty in a utilitarian service context",
+    "author" : [ "Aude Rychalski", "Sarah Hudson." ],
+    "venue" : "Journal of Business Research 71:84 – 91.",
+    "citeRegEx" : "Rychalski and Hudson.,? 2017",
+    "shortCiteRegEx" : "Rychalski and Hudson.",
+    "year" : 2017
+  }, {
+    "title" : "Ehctool: Managing emotional hotspots for conversational agents",
+    "author" : [ "Tommy Sandbank", "Michal Shmueli-Scheuer", "Jonathan Herzig", "David Konopnicki", "Rottem Shaul." ],
+    "venue" : "Proceedings of the 22nd Inter-",
+    "citeRegEx" : "Sandbank et al\\.,? 2017",
+    "shortCiteRegEx" : "Sandbank et al\\.",
+    "year" : 2017
+  }, {
+    "title" : "Predicting causes of reformulation in intelligent assistants",
+    "author" : [ "Shumpei Sano", "Nobuhiro Kaji", "Manabu Sassano." ],
+    "venue" : "Proceedings of the 18th Annual SIGdial Meeting on Discourse and Dialogue. pages 299–309.",
+    "citeRegEx" : "Sano et al\\.,? 2017",
+    "shortCiteRegEx" : "Sano et al\\.",
+    "year" : 2017
+  }, {
+    "title" : "The technology behind personal digital assistants: An overview of the system architecture and key components",
+    "author" : [ "R. Sarikaya." ],
+    "venue" : "IEEE Signal Processing Magazine 34(1):67–81.",
+    "citeRegEx" : "Sarikaya.,? 2017",
+    "shortCiteRegEx" : "Sarikaya.",
+    "year" : 2017
+  }, {
+    "title" : "Pragmatics in humancomputer conversations",
+    "author" : [ "P. Cicekli I. Saygin A." ],
+    "venue" : "Journal of Pragmatics 34(3).",
+    "citeRegEx" : "A.,? 2002",
+    "shortCiteRegEx" : "A.",
+    "year" : 2002
+  }, {
+    "title" : "A taxonomy of quality of service and quality of experience of multimodal human-machine interaction",
+    "author" : [ "Moller Sebastian", "Klaus-Peter Engelbrecht", "Christine Kuhnel", "Ina Wechsung", "Benjamin Weiss." ],
+    "venue" : "Quality of Mul-",
+    "citeRegEx" : "Sebastian et al\\.,? 2009",
+    "shortCiteRegEx" : "Sebastian et al\\.",
+    "year" : 2009
+  }, {
+    "title" : "Looking at the Last Two Turns, I’d Say",
+    "author" : [ "Stefan Steidl", "Christian Hacker", "Christine Ruff", "Anton Batliner", "Elmar Nöth", "Jürgen Haas" ],
+    "venue" : null,
+    "citeRegEx" : "Steidl et al\\.,? \\Q2004\\E",
+    "shortCiteRegEx" : "Steidl et al\\.",
+    "year" : 2004
+  }, {
+    "title" : "Paradise: A framework for evaluating spoken dialogue agents",
+    "author" : [ "Marilyn A. Walker", "Diane J. Litman", "Candace A. Kamm", "Alicia Abella." ],
+    "venue" : "Proceedings of the 35th Annual Meeting of the Association for Computational Linguis-",
+    "citeRegEx" : "Walker et al\\.,? 1997",
+    "shortCiteRegEx" : "Walker et al\\.",
+    "year" : 1997
+  }, {
+    "title" : "Quantitative and qualitative evaluation of darpa communicator spoken dialogue systems",
+    "author" : [ "Marilyn A. Walker", "Rebecca Passonneau", "Julie E. Boland." ],
+    "venue" : "Proceedings of the 39th Annual Meeting on Association for Computational",
+    "citeRegEx" : "Walker et al\\.,? 2001",
+    "shortCiteRegEx" : "Walker et al\\.",
+    "year" : 2001
+  }, {
+    "title" : "Using natural language processing and discourse features to identify understanding errors",
+    "author" : [ "Marilyn A. Walker", "Jeremy H. Wright", "Irene Langkilde." ],
+    "venue" : "Proceedings of the Seventeenth International Conference on Machine Learn-",
+    "citeRegEx" : "Walker et al\\.,? 2000",
+    "shortCiteRegEx" : "Walker et al\\.",
+    "year" : 2000
+  }, {
+    "title" : "Evaluating human-machine conversation for appropriateness",
+    "author" : [ "Nick Webb", "David Benyon", "Preben Hansen", "Oil Mival." ],
+    "venue" : "Proceedings of the Seventh International Conference on Language Resources and Evaluation (LREC’10).",
+    "citeRegEx" : "Webb et al\\.,? 2010",
+    "shortCiteRegEx" : "Webb et al\\.",
+    "year" : 2010
+  }, {
+    "title" : "Delivering quality service: Balancing customer perceptions and expectations",
+    "author" : [ "Valarie Zeithaml", "A Parsu Parasuraman", "Leonard Berry." ],
+    "venue" : "1811",
+    "citeRegEx" : "Zeithaml et al\\.,? 1990",
+    "shortCiteRegEx" : "Zeithaml et al\\.",
+    "year" : 1990
+  } ],
+  "referenceMentions" : [ {
+    "referenceID" : 6,
+    "context" : "in artificial intelligence and natural language processing (Hirschberg and Manning, 2015)",
+    "startOffset" : 59,
+    "endOffset" : 89
+  }, {
+    "referenceID" : 0,
+    "context" : "Such rejection along with the previous responses could lead to customer frustration (Amsel, 1992).",
+    "startOffset" : 84,
+    "endOffset" : 97
+  }, {
+    "referenceID" : 3,
+    "context" : "Shortcomings of this approach are discussed by (Hajdinjak and Mihelic, 2006).",
+    "startOffset" : 47,
+    "endOffset" : 76
+  }, {
+    "referenceID" : 19,
+    "context" : "In (Sandbank et al., 2017) the authors presented a conversa-",
+    "startOffset" : 3,
+    "endOffset" : 26
+  }, {
+    "referenceID" : 21,
+    "context" : "of (Sarikaya, 2017; Sano et al., 2017) studied reasons why users reformulated utterances in such systems.",
+    "startOffset" : 3,
+    "endOffset" : 38
+  }, {
+    "referenceID" : 20,
+    "context" : "of (Sarikaya, 2017; Sano et al., 2017) studied reasons why users reformulated utterances in such systems.",
+    "startOffset" : 3,
+    "endOffset" : 38
+  }, {
+    "referenceID" : 21,
+    "context" : "Specifically, in (Sarikaya, 2017) they reported on how the different reasons affect the users’ satisfaction.",
+    "startOffset" : 17,
+    "endOffset" : 33
+  }, {
+    "referenceID" : 20,
+    "context" : "In (Sano et al., 2017) they focused on how to automatically predict the reason for user’s dissatisfaction using different features.",
+    "startOffset" : 3,
+    "endOffset" : 22
+  }, {
+    "referenceID" : 27,
+    "context" : "In (Walker et al., 2000; Hastie et al., 2002) the authors also looked for problems in a specific setting of spoken conversations.",
+    "startOffset" : 3,
+    "endOffset" : 45
+  }, {
+    "referenceID" : 4,
+    "context" : "In (Walker et al., 2000; Hastie et al., 2002) the authors also looked for problems in a specific setting of spoken conversations.",
+    "startOffset" : 3,
+    "endOffset" : 45
+  }, {
+    "referenceID" : 1,
+    "context" : "the field of pragmatics in various metrics around the principles of cooperative conversation (Chakrabarti and Luger, 2013; Saygin A. P., 2002).",
+    "startOffset" : 93,
+    "endOffset" : 142
+  }, {
+    "referenceID" : 24,
+    "context" : "In (Steidl et al., 2004) they measured dialogue success at the turn level as",
+    "startOffset" : 3,
+    "endOffset" : 24
+  }, {
+    "referenceID" : 28,
+    "context" : "(Webb et al., 2010) created a measure of dialogue appropriateness to determine its role in maintaining a conversation.",
+    "startOffset" : 0,
+    "endOffset" : 19
+  }, {
+    "referenceID" : 23,
+    "context" : "Similarly, in (Sebastian et al., 2009) they developed a taxonomy of available measures for an enduser’s quality of experience for multimodel dialogue systems, some of which touch on conversational quality.",
+    "startOffset" : 14,
+    "endOffset" : 38
+  }, {
+    "referenceID" : 14,
+    "context" : "In (Mimoun et al., 2012) the authors analyzed reasons sales chatbots fail by interviewing chatbots experts.",
+    "startOffset" : 3,
+    "endOffset" : 24
+  }, {
+    "referenceID" : 2,
+    "context" : "In (Gnewuch et al., 2017) they studied service quality dimensions (i.",
+    "startOffset" : 3,
+    "endOffset" : 25
+  }, {
+    "referenceID" : 21,
+    "context" : "Accurate intent detection is thus a fundamental characteristic of well-trained virtual agents, and incorrect intent analysis is reported as the leading cause of user dissatisfaction (Sarikaya, 2017).",
+    "startOffset" : 182,
+    "endOffset" : 198
+  }, {
+    "referenceID" : 11,
+    "context" : "Such agent repetitions lead to an unnatural interaction (Klüwer, 2011).",
+    "startOffset" : 56,
+    "endOffset" : 70
+  }, {
+    "referenceID" : 21,
+    "context" : "satisfaction (Sarikaya, 2017), and cascade to an egregious conversation (as discussed below in Section 3.",
+    "startOffset" : 13,
+    "endOffset" : 29
+  }, {
+    "referenceID" : 29,
+    "context" : "An ineffective interaction requires the expenditure of relatively large effort from the customer with little return on the investment (Zeithaml et al., 1990; Mimoun et al., 2012).",
+    "startOffset" : 134,
+    "endOffset" : 178
+  }, {
+    "referenceID" : 14,
+    "context" : "An ineffective interaction requires the expenditure of relatively large effort from the customer with little return on the investment (Zeithaml et al., 1990; Mimoun et al., 2012).",
+    "startOffset" : 134,
+    "endOffset" : 178
+  }, {
+    "referenceID" : 20,
+    "context" : "This can be caused by different reasons as described in (Sano et al., 2017).",
+    "startOffset" : 56,
+    "endOffset" : 75
+  }, {
+    "referenceID" : 16,
+    "context" : "The customer’s emotional state during the conversation is known to correlate with the conversation’s quality (Oliver, 2014).",
+    "startOffset" : 109,
+    "endOffset" : 123
+  }, {
+    "referenceID" : 18,
+    "context" : "Usually, high positive emotions capture different styles of “thanking the agent”, or indicate that the customer is somewhat satisfied (Rychalski and Hudson, 2017), thus, the conversation is less likely to become egregious.",
+    "startOffset" : 134,
+    "endOffset" : 162
+  }, {
+    "referenceID" : 0,
+    "context" : "Moreover, even if there are human agents, they might not be available at all times, and thus, a rejection of such a request is sometimes reasonable, but might still lead to customer frustration (Amsel, 1992).",
+    "startOffset" : 194,
+    "endOffset" : 207
+  }, {
+    "referenceID" : 5,
+    "context" : "This model was implemented using state-of-the-art textual features as in (Herzig et al., 2017).",
+    "startOffset" : 73,
+    "endOffset" : 94
+  }, {
+    "referenceID" : 5,
+    "context" : "In (Herzig et al., 2017) emotions are detected from text, which",
+    "startOffset" : 3,
+    "endOffset" : 24
+  }, {
+    "referenceID" : 8,
+    "context" : "ogy presented in (Jovita et al., 2015) claiming that the best answer given by the system has the highest similarity value between the customer turn and the agent answer.",
+    "startOffset" : 17,
+    "endOffset" : 38
+  } ],
+  "year" : 2018,
+  "abstractText" : "Virtual agents are becoming a prominent channel of interaction in customer service. Not all customer interactions are smooth, however, and some can become almost comically bad. In such instances, a human agent might need to step in and salvage the conversation. Detecting bad conversations is important since disappointing customer service may threaten customer loyalty and impact revenue. In this paper, we outline an approach to detecting such egregious conversations, using behavioral cues from the user, patterns in agent responses, and useragent interaction. Using logs of two commercial systems, we show that using these features improves the detection F1-score by around 20% over using textual features alone. In addition, we show that those features are common across two quite different domains and, arguably, universal.",
+  "creator" : "LaTeX with hyperref package"
+}
