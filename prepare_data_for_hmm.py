@@ -3,7 +3,6 @@ import os
 import re
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
-from difflib import SequenceMatcher
 import pandas as pd
 import argparse
 
@@ -94,10 +93,6 @@ class DataCreator:
                 vocab.remove(stop_word)
 
         return vocab
-
-    @staticmethod
-    def similar(a, b):
-        return SequenceMatcher(None, a, b).ratio()
 
     @staticmethod
     def isfloat(value):
