@@ -18,8 +18,8 @@ def read_pretrained_w2v(pretrained_w2v_fname, is_glove):
         w2vec = pd.read_csv(pretrained_w2v_fname, header=None, sep=' ', quoting=3, encoding="ISO-8859-1")
         tprint("done")
 
-        w2v_words = w2vec.ix[:, 0].values
-        w2v_vectors = w2vec.ix[:, 1:].values
+        w2v_words = w2vec.iloc[:, 0].values
+        w2v_vectors = w2vec.iloc[:, 1:].values
 
         num_words, dim = w2v_vectors.shape
 
