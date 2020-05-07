@@ -4,6 +4,7 @@ This repository contains a dataset and related code for the ACL 2019 paper *[Tal
 
 The dataset contains 1705 automatically-generated summaries of scientific papers from ACL, NAACL, EMNLP, SIGDIAL (2015-2018), and ICML (2017-2018).
 We are not allowed to publish the original papers, however they are publicly available.
+For downloading them, see *data/talksumm_papers_urls.txt* which contains the papers' titles and URLs.
 The summaries can be found at *data/talksumm_summaries.zip*. The name of each summary file is the title of the corresponding paper.
  
 Using our code, you can generate summaries given papers and transcripts of their conference talks.
