@@ -54,7 +54,8 @@ def print_table(rows, col_names=None, sep='\uFFFA', num_fraction_digits=None, ma
         if num_fraction_digits is not None:
             for key in item.keys():
                 if isinstance(item[key], float):
-                    item[key] = round(item[key], num_fraction_digits)
+                    format_str = '{:.' + str(num_fraction_digits) + 'f}'
+                    item[key] = format_str.format(item[key])
 
         my_list.append([sep.join(textwrap.wrap(str(item[col]), max_col_width)) for col in col_names])
     col_size = [max(map(len, (sep.join(col)).split(sep))) for col in zip(*my_list)]
