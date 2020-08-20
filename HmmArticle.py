@@ -541,7 +541,7 @@ class HmmArticle:
                 if word in self.backg_word_count:
                     word_dist[word_i] = self.backg_word_count[word]
 
-            word_dist /= np.linalg.norm(word_dist)
+            word_dist /= np.sum(word_dist)
 
             return word_dist
 
