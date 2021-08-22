@@ -119,7 +119,7 @@ def no_links_handler(response, url):
   return []  
 
 failed_titles = []
-with open("./talksumm_papers_titles_url.txt", "r") as input_txt:
+with open("./talksumm_papers_urls.txt", "r") as input_txt:
   for line in input_txt.readlines():
     try:
       title, url = line.rstrip().split("\t") 
